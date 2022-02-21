@@ -57,20 +57,14 @@ const scale = () => {
 
 const render = () => {
     context.clearRect(0, 0, width, height);
-
     const sphere = { type: 'Sphere' };
 
-    addFill(sphere, '#2a2a2a');
+    addFill(sphere, 'dimgrey');
+    addFill(land, 'white');
+    addStroke(countries, 'silver');
+    addStroke(graticule, 'silver');
 
-    addStroke(land, '#1d1d1d');
-    addFill(land, '#737368');
-
-    addStroke(countries, '#3d3d38');
-
-    addStroke(graticule, '#767676');
-
-    !!currentCountry && addStroke(currentCountry, '#1d1d1d');
-    !!currentCountry && addFill(currentCountry, '#720000');
+    !!currentCountry && addFill(currentCountry, 'goldenrod');
 };
 
 /* Rotation */
@@ -148,24 +142,26 @@ function mousemove() {
 }
 
 function enter(country) {
-    const enteredCountry = countryList.find(c => parseInt(c.id, 10) === parseInt(country.id, 10));
-    const covidCountry = covidCountryList.find(c => parseInt(c.numericCode, 10) === parseInt(country.id, 10));
+    if (!countryList || !covidCountryList) return;
 
-    if (!enteredCountry || !enteredCountry.name || !covidCountry.name) return;
+    const enteredCountry = countryList.find(c => parseInt(c.id, 10) === parseInt(country.id, 10));
+    const covidCountry = covidCountryList.find(c => parseInt(c.ccn3, 10) === parseInt(country.id, 10));
+
+    if (!enteredCountry || !enteredCountry.name || !covidCountry || !covidCountry.name) return;
 
     const getValue = key => !!key.value ? key.value.toLocaleString() : '';
 
-    if (!!covidCountryCache[covidCountry.alpha2Code]) {
-        const { confirmed, recovered, deaths, lastUpdate } = covidCountryCache[covidCountry.alpha2Code];
-        updateCountryInfo(enteredCountry.name, getValue(confirmed), getValue(recovered), getValue(deaths), !!moment(lastUpdate).isValid() ? moment(lastUpdate).format('LLLL') : '');
+    if (!!covidCountryCache[covidCountry.cca3]) {
+        const { confirmed, recovered, deaths, lastUpdate } = covidCountryCache[covidCountry.cca3];
+        updateCountryInfo(enteredCountry.name, getValue(confirmed), getValue(recovered), getValue(deaths), !!moment(lastUpdate).isValid() ? moment(lastUpdate).format('LL') : '');
         return;
     }
 
-    fetch('https://covid19.mathdro.id/api/countries/' + covidCountry.alpha2Code)
+    fetch('https://covid19.mathdro.id/api/countries/' + covidCountry.cca3)
         .then(res => res.json())
         .then(({ confirmed = {}, recovered = {}, deaths = {}, lastUpdate = '' }) => {
-            covidCountryCache[covidCountry.alpha2Code] = { confirmed, recovered, deaths, lastUpdate };
-            updateCountryInfo(enteredCountry.name, getValue(confirmed), getValue(recovered), getValue(deaths), !!moment(lastUpdate).isValid() ? moment(lastUpdate).format('LLLL') : '');
+            covidCountryCache[covidCountry.cca3] = { confirmed, recovered, deaths, lastUpdate };
+            updateCountryInfo(enteredCountry.name, getValue(confirmed), getValue(recovered), getValue(deaths), !!moment(lastUpdate).isValid() ? moment(lastUpdate).format('LL') : '');
     });
 }
 
@@ -224,7 +220,7 @@ const init = () => {
         })
         .catch(err => console.error(err));
 
-    fetch('https://restcountries.eu/rest/v2/all')
+    fetch('https://restcountries.com/v3.1/all')
         .then(res => res.json())
         .then(res => covidCountryList = res);
 };
